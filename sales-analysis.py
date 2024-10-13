@@ -106,13 +106,13 @@ plt.show()
 # Visualizing Inventory Consumption
 plt.figure(figsize=(12, 6))
 
-# Line plot for Inventory Consumption without Discount
+# Line plot for Inventory Consumption without Discount (solid red)
 for sku, consumption in consumption_without_discount.items():
-    plt.plot(range(1, days + 1), consumption, label=f'Without Discount - {sku}')
+    plt.plot(range(1, days + 1), consumption, label=f'Without Discount - {sku}', color='red', linestyle='solid')
 
-# Line plot for Inventory Consumption with Discount
+# Line plot for Inventory Consumption with Discount (dashed green)
 for sku, consumption in consumption_with_discount.items():
-    plt.plot(range(1, days + 1), consumption, linestyle='--', label=f'With Discount - {sku}')
+    plt.plot(range(1, days + 1), consumption, label=f'With Discount - {sku}', color='green', linestyle='dashed')
 
 plt.title('Inventory Consumption Over 365 Days')
 plt.xlabel('Days')

@@ -29,21 +29,29 @@ total_revenue_top_10 = revenue_per_item.sum()
 print("\nTotal Revenue from Top 10 Items:", total_revenue_top_10)
 
 # Visualization
-plt.figure(figsize=(12, 6))
+# Create a DataFrame for plotting, including both Qty and Revenue
+top_items_data = sales_data[sales_data['SKU'].isin(top_selling_items.index.get_level_values('SKU'))]
+top_items_summary = top_items_data.groupby(['Style', 'SKU']).agg({'Qty': 'sum', 'Revenue': 'sum'}).reset_index()
 
-# Create a DataFrame for plotting
-top_items_df = revenue_per_item.reset_index()
+# Sort for visualization
+top_items_summary = top_items_summary.sort_values(by='Qty', ascending=False).head(10)
+
+print("\nTop Items Summary DataFrame:")
+print(top_items_summary)
+
+# Visualization
+plt.figure(figsize=(12, 6))
 
 # Bar plot for Quantity Sold
 plt.subplot(1, 2, 1)
-sns.barplot(data=top_items_df, x='Qty', y='SKU', palette='viridis')
+sns.barplot(data=top_items_summary, x='Qty', y='SKU', palette='viridis')
 plt.title('Top 10 Sold Items - Quantity')
 plt.xlabel('Quantity Sold')
 plt.ylabel('SKU')
 
 # Bar plot for Revenue
 plt.subplot(1, 2, 2)
-sns.barplot(data=top_items_df, x='Revenue', y='SKU', palette='viridis')
+sns.barplot(data=top_items_summary, x='Revenue', y='SKU', palette='viridis')
 plt.title('Top 10 Sold Items - Revenue')
 plt.xlabel('Total Revenue')
 plt.ylabel('SKU')

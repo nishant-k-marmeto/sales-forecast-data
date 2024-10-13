@@ -21,8 +21,8 @@ initial_inventory = {sku: initial_inventory_per_item for sku in top_selling_item
 # Calculate total revenue without discount
 revenue_without_discount = revenue_per_item.sum()
 
-# Apply tiered discounts
-top_items_data['Discounted Price'] = top_items_data.apply(
+# Apply tiered discounts using .loc to avoid SettingWithCopyWarning
+top_items_data.loc[:, 'Discounted Price'] = top_items_data.apply(
     lambda row: row['Amount'] * (0.90 if row['Qty'] >= 2 else (0.85 if row['Qty'] >= 3 else 1)), 
     axis=1
 )
@@ -34,7 +34,8 @@ revenue_with_discount = top_items_data.groupby('SKU')['Discounted Price'].sum().
 def inventory_consumption(days, discount=False):
     inventory_consumed = {sku: 0 for sku in initial_inventory}
     consumption_data = {sku: [] for sku in initial_inventory}
-    
+    consumption_days = {sku: None for sku in initial_inventory}  # To track consumption days
+
     for day in range(1, days + 1):
         for sku in initial_inventory:
             if discount:
@@ -44,16 +45,23 @@ def inventory_consumption(days, discount=False):
                 # Assume selling a fixed number of items for non-discounted case
                 sold_qty = min(1, initial_inventory[sku])  # 1 item sold
 
-            inventory_consumed[sku] += sold_qty
-            initial_inventory[sku] -= sold_qty
-            consumption_data[sku].append(inventory_consumed[sku])
+            if initial_inventory[sku] > 0:  # If there is inventory left to sell
+                inventory_consumed[sku] += sold_qty
+                initial_inventory[sku] -= sold_qty
+                consumption_data[sku].append(inventory_consumed[sku])
+                
+                # Track consumption days
+                if consumption_days[sku] is None and inventory_consumed[sku] >= initial_inventory_per_item:
+                    consumption_days[sku] = day
+            else:
+                consumption_data[sku].append(inventory_consumed[sku])  # Keep appending the last value when sold out
 
-    return consumption_data
+    return consumption_data, consumption_days
 
 # Simulate inventory consumption over 365 days
 days = 365
-consumption_without_discount = inventory_consumption(days, discount=False)
-consumption_with_discount = inventory_consumption(days, discount=True)
+consumption_without_discount, consumption_days_without_discount = inventory_consumption(days, discount=False)
+consumption_with_discount, consumption_days_with_discount = inventory_consumption(days, discount=True)
 
 # Visualizing Revenue
 plt.figure(figsize=(12, 6))
@@ -68,6 +76,10 @@ plt.xticks(rotation=45)
 plt.grid(axis='y')
 plt.legend()
 
+# Add values on top of bars for without discount
+for index, value in enumerate(revenue_per_item):
+    plt.text(index, value, f'{value/1000:.0f}k', ha='center', va='bottom')
+
 # Bar plot for Revenue with Discount
 plt.subplot(1, 2, 2)
 revenue_with_discount.plot(kind='bar', color='orange', alpha=0.7, label='With Discount')
@@ -77,6 +89,10 @@ plt.ylabel('Total Revenue')
 plt.xticks(rotation=45)
 plt.grid(axis='y')
 plt.legend()
+
+# Add values on top of bars for with discount
+for index, value in enumerate(revenue_with_discount):
+    plt.text(index, value, f'{value/1000:.0f}k', ha='center', va='bottom')
 
 plt.tight_layout()
 plt.show()
@@ -99,3 +115,12 @@ plt.legend()
 plt.grid()
 plt.tight_layout()
 plt.show()
+
+# Print consumption days for each SKU
+print("Consumption Days Without Discount:")
+for sku, days in consumption_days_without_discount.items():
+    print(f"{sku}: Consumed by day {days}" if days is not None else f"{sku}: Not consumed")
+
+print("\nConsumption Days With Discount:")
+for sku, days in consumption_days_with_discount.items():
+    print(f"{sku}: Consumed by day {days}" if days is not None else f"{sku}: Not consumed")

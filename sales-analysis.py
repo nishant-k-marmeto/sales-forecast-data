@@ -32,24 +32,30 @@ revenue_with_discount = top_items_data.groupby('SKU')['Discounted Price'].sum().
 
 # Inventory consumption calculations
 def inventory_consumption(days, discount=False):
+    # Reset inventory for each simulation
+    inventory = {sku: initial_inventory_per_item for sku in initial_inventory}
     inventory_consumed = {sku: 0 for sku in initial_inventory}
     consumption_data = {sku: [] for sku in initial_inventory}
     consumption_days = {sku: None for sku in initial_inventory}  # To track consumption days
 
     for day in range(1, days + 1):
         for sku in initial_inventory:
-            if discount:
-                # Assume selling a fixed number of items for discounted case
-                sold_qty = min(2, initial_inventory[sku])  # 2 items sold for the sake of simplicity
-            else:
-                # Assume selling a fixed number of items for non-discounted case
-                sold_qty = min(1, initial_inventory[sku])  # 1 item sold
+            if inventory[sku] > 0:  # If there is inventory left to sell
+                if discount:
+                    # Assume selling a fixed number of items for discounted case
+                    sold_qty = min(2, inventory[sku])  # Selling 2 items when discount is applied
+                else:
+                    # Assume selling a fixed number of items for non-discounted case
+                    sold_qty = min(1, inventory[sku])  # Selling 1 item without discount
 
-            if initial_inventory[sku] > 0:  # If there is inventory left to sell
+                # Update the sold quantity and inventory
                 inventory_consumed[sku] += sold_qty
-                initial_inventory[sku] -= sold_qty
+                inventory[sku] -= sold_qty  # Update remaining inventory
                 consumption_data[sku].append(inventory_consumed[sku])
                 
+                # Debugging: Print sold quantity and remaining inventory
+                print(f"Day {day}: Selling {sold_qty} of {sku}. Inventory left: {inventory[sku]}.")
+
                 # Track consumption days
                 if consumption_days[sku] is None and inventory_consumed[sku] >= initial_inventory_per_item:
                     consumption_days[sku] = day
